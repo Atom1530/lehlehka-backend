@@ -1,6 +1,6 @@
 {
   "name": "lehlehka-backend",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "main": "dist/server.js",
@@ -9,7 +9,13 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "lint": "eslint .",
-    "format": "prettier -w ."
+    "format": "prettier -w .",
+    "postinstall": "prisma generate",
+    "prisma:generate": "prisma generate",
+    "prisma:studio": "prisma studio",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:format": "prisma format"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -18,7 +24,9 @@
     "helmet": "^7.1.0",
     "morgan": "^1.10.0",
     "swagger-ui-express": "^5.0.1",
-    "yamljs": "^0.3.0"
+    "yamljs": "^0.3.0",
+    "@prisma/client": "^5.20.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.8.0",
@@ -32,6 +40,7 @@
     "prettier": "^3.3.3",
     "tsx": "^4.16.2",
     "typescript": "^5.6.3",
-    "typescript-eslint": "^8.0.0"
+    "typescript-eslint": "^8.0.0",
+    "prisma": "^5.20.0"
   }
 }

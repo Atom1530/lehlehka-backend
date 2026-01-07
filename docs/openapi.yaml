@@ -1,12 +1,15 @@
 openapi: 3.0.3
 info:
   title: Lehlehka API
-  version: 0.1.0
+  version: 0.2.0
   description: Backend API for Lehlehka (Next + Node) team project.
 servers:
   - url: http://localhost:4000
+
 tags:
   - name: system
+    description: Service and environment endpoints.
+
 paths:
   /health:
     get:
@@ -26,3 +29,22 @@ paths:
                     type: string
                     format: date-time
                 required: [ok, ts]
+
+  /health/db:
+    get:
+      tags: [system]
+      summary: Database health check
+      description: Verifies database connectivity.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required: [ok]
+        '500':
+          description: Database error
