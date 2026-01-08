@@ -1,10 +1,6 @@
 {
   "name": "lehlehka-backend",
-<<<<<<< HEAD
-  "version": "0.2.0",
-=======
   "version": "0.3.0",
->>>>>>> 5219943 (prisma full version added)
   "private": true,
   "type": "module",
   "main": "dist/server.js",
@@ -19,16 +15,12 @@
     "prisma:studio": "prisma studio",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
-<<<<<<< HEAD
-    "prisma:format": "prisma format"
-=======
     "prisma:format": "prisma format",
     "prisma:seed": "prisma db seed",
     "seed": "prisma db seed"
   },
   "prisma": {
     "seed": "tsx prisma/seed/seed.ts"
->>>>>>> 5219943 (prisma full version added)
   },
   "dependencies": {
     "cors": "^2.8.5",
