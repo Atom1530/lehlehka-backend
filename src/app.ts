@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { corsMiddleware } from './middleware/cors.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { prisma } from './db/prisma.js';
+import { authRouter } from './modules/auth/auth.router.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,6 +39,8 @@ export function createApp() {
   const openapiPath = path.join(__dirname, '../docs/openapi.yaml');
   const spec = YAML.load(openapiPath);
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(spec));
+
+  app.use('/api/auth', authRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

@@ -9,11 +9,12 @@ const envSchema = z.object({
   CORS_ORIGINS: z.string().default(''),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
 
-  // Will be required starting from PR-03 (Auth). Keeping optional in PR-02.
-  JWT_ACCESS_SECRET: z.string().optional(),
-  JWT_REFRESH_SECRET: z.string().optional(),
-  JWT_ACCESS_TTL: z.string().optional(),
-  JWT_REFRESH_TTL: z.string().optional(),
+  // PR-04: Auth
+  JWT_ACCESS_SECRET: z.string().min(16, 'JWT_ACCESS_SECRET is required (min 16 chars)'),
+  JWT_REFRESH_SECRET: z.string().min(16, 'JWT_REFRESH_SECRET is required (min 16 chars)'),
+  JWT_ACCESS_TTL: z.string().min(1, 'JWT_ACCESS_TTL is required (e.g. 15m)'),
+  JWT_REFRESH_TTL: z.string().min(1, 'JWT_REFRESH_TTL is required (e.g. 30d)'),
+  BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(8).max(15).default(10),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -34,4 +35,5 @@ export const env = {
   jwtRefreshSecret: parsed.data.JWT_REFRESH_SECRET,
   jwtAccessTtl: parsed.data.JWT_ACCESS_TTL,
   jwtRefreshTtl: parsed.data.JWT_REFRESH_TTL,
+  bcryptSaltRounds: parsed.data.BCRYPT_SALT_ROUNDS,
 };
