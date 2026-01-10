@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Lehlehka API
-  version: 0.4.0
+  version: 0.5.0
   description: Backend API for Lehlehka (Next + Node) team project.
 servers:
   - url: http://localhost:4000
@@ -11,6 +11,8 @@ tags:
     description: Service and environment endpoints.
   - name: auth
     description: Authentication (access+refresh) and sessions.
+  - name: users
+    description: User profile endpoints.
 
 components:
   securitySchemes:
@@ -119,6 +121,31 @@ components:
         refreshToken:
           type: string
           description: Optional; if provided, invalidates only that session.
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 32
+        gender:
+          type: string
+          enum: [boy, girl]
+          nullable: true
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+      additionalProperties: false
+
+    UpdateAvatarRequest:
+      type: object
+      properties:
+        avatarUrl:
+          type: string
+          description: Public URL or relative path to avatar.
+      required: [avatarUrl]
+      additionalProperties: false
 
     AuthResponse:
       allOf:
@@ -288,6 +315,91 @@ paths:
                     type: string
                     enum: [single, all]
                 required: [ok, scope]
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/current:
+    get:
+      tags: [users]
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicUser'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users:
+    patch:
+      tags: [users]
+      summary: Update current user profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicUser'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/avatar:
+    patch:
+      tags: [users]
+      summary: Update current user avatar URL/path
+      description: "Lite" implementation for PR-05. Stores avatarUrl in DB. File upload will be added in a later PR.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAvatarRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicUser'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Unauthorized
           content:

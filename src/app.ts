@@ -10,6 +10,7 @@ import { corsMiddleware } from './middleware/cors.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { prisma } from './db/prisma.js';
 import { authRouter } from './modules/auth/auth.router.js';
+import { usersRouter } from './modules/users/users.router.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -41,6 +42,7 @@ export function createApp() {
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(spec));
 
   app.use('/api/auth', authRouter);
+  app.use('/api/users', usersRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
