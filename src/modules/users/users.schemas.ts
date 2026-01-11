@@ -14,11 +14,3 @@ export const updateUserSchema = z
       .optional(),
   })
   .strict();
-
-// PR-05 (lite): keep avatar update JSON-based to avoid introducing new deps
-// that would require regenerating package-lock. We store URL/path in DB.
-export const updateAvatarSchema = z
-  .object({
-    avatarUrl: z.string().trim().min(1).max(2048),
-  })
-  .strict();
