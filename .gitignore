@@ -4,3 +4,9 @@ dist
 .env.local
 uploads
 .DS_Store
+
+# temp
+/tmp/
+
+.cookies.txt
+*.cookies.txt

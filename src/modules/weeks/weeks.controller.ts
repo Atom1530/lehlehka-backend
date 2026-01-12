@@ -1,13 +1,19 @@
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import type { AuthenticatedRequest } from '../../middleware/auth.js';
 
-import { getCurrentWeekInfo, getWeekBabyState, getWeekDashboardInfo, getWeekMomState } from './weeks.service.js';
+import { HttpError } from '../../middleware/errorHandler.js';
+
+import { getCurrentWeekInfo, getWeekBabyState, getWeekDashboardInfoPublic, getWeekMomState } from './weeks.service.js';
 
 export const weeksController = {
   // Public: week dashboard info by weekNumber
-  async getByWeekNumber(req: any, res: Response) {
-    const weekNumber = req.params.weekNumber as number;
-    const info = await getWeekDashboardInfo(weekNumber);
+  async getByWeekNumber(req: Request<{ weekNumber: string }>, res: Response) {
+    const weekNumber = Number(req.params.weekNumber);
+    if (!Number.isInteger(weekNumber) || weekNumber < 1 || weekNumber > 40) {
+      throw new HttpError(400, 'Invalid weekNumber', { code: 'INVALID_WEEK_NUMBER' });
+    }
+    const dueDate = typeof req.query.dueDate === 'string' ? req.query.dueDate : undefined;
+    const info = await getWeekDashboardInfoPublic(weekNumber, dueDate);
     res.status(200).json(info);
   },
 
@@ -19,14 +25,20 @@ export const weeksController = {
 
   // Private: baby development by week
   async getBabyByWeekNumber(req: AuthenticatedRequest, res: Response) {
-    const weekNumber = req.params.weekNumber as number;
+    const weekNumber = Number((req as unknown as Request<{ weekNumber: string }>).params.weekNumber);
+    if (!Number.isInteger(weekNumber) || weekNumber < 1 || weekNumber > 40) {
+      throw new HttpError(400, 'Invalid weekNumber', { code: 'INVALID_WEEK_NUMBER' });
+    }
     const row = await getWeekBabyState(weekNumber);
     res.status(200).json(row);
   },
 
   // Private: mom body changes by week
   async getMomByWeekNumber(req: AuthenticatedRequest, res: Response) {
-    const weekNumber = req.params.weekNumber as number;
+    const weekNumber = Number((req as unknown as Request<{ weekNumber: string }>).params.weekNumber);
+    if (!Number.isInteger(weekNumber) || weekNumber < 1 || weekNumber > 40) {
+      throw new HttpError(400, 'Invalid weekNumber', { code: 'INVALID_WEEK_NUMBER' });
+    }
     const row = await getWeekMomState(weekNumber);
     res.status(200).json(row);
   },
