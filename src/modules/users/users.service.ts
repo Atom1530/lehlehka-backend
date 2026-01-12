@@ -3,7 +3,10 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { prisma } from '../../db/prisma.js';
+import { HttpError } from '../../middleware/errorHandler.js';
 import { parseMultipartSingleFile } from '../../utils/multipart.js';
+import { env } from '../../config/env.js';
+import { uploadImageToCloudinary } from '../../utils/cloudinary.js';
 
 export type PublicUserDto = {
   id: string;
@@ -23,7 +26,8 @@ function toPublicUser(user: User): PublicUserDto {
     email: user.email,
     gender: user.gender ?? null,
     dueDate: user.dueDate ? user.dueDate.toISOString().slice(0, 10) : null,
-    avatarUrl: user.avatarUrl ?? null,
+    // if avatar wasn't uploaded yet, return a safe default URL
+    avatarUrl: user.avatarUrl ?? env.defaultAvatarUrl ?? null,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
   };
@@ -32,10 +36,7 @@ function toPublicUser(user: User): PublicUserDto {
 export async function getCurrentUser(userId: string): Promise<PublicUserDto> {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
-    const err = new Error('User not found');
-    // @ts-expect-error attach code for error handler
-    err.status = 404;
-    throw err;
+    throw new HttpError(404, 'User not found', { code: 'NOT_FOUND' });
   }
   return toPublicUser(user);
 }
@@ -85,36 +86,56 @@ export async function updateAvatarFile(userId: string, input: AvatarUploadInput)
   });
 
   if (!file) {
-    const err = new Error('Avatar file is required');
-    // @ts-expect-error attach code for error handler
-    err.status = 400;
-    throw err;
+    throw new HttpError(400, 'Avatar file is required', { code: 'VALIDATION_ERROR' });
   }
 
   const mime = file.contentType || 'application/octet-stream';
   const ext = extFromMime(mime) || path.extname(file.filename || '');
   const safeExt = ['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(ext.toLowerCase()) ? ext.toLowerCase() : null;
   if (!safeExt) {
-    const err = new Error('Unsupported avatar file type');
-    // @ts-expect-error attach code for error handler
-    err.status = 400;
-    throw err;
+    throw new HttpError(400, 'Unsupported avatar file type', { code: 'VALIDATION_ERROR' });
   }
 
   // 5MB limit already enforced at the router layer, but keep a guard.
   if (file.data.length === 0 || file.data.length > 5 * 1024 * 1024) {
-    const err = new Error('Invalid avatar size');
-    // @ts-expect-error attach code for error handler
-    err.status = 400;
-    throw err;
+    throw new HttpError(400, 'Invalid avatar size', { code: 'VALIDATION_ERROR' });
   }
 
   await fs.mkdir(AVATAR_DIR, { recursive: true });
   const filename = `${crypto.randomUUID()}${safeExt === '.jpeg' ? '.jpg' : safeExt}`;
-  const filePath = path.join(AVATAR_DIR, filename);
-  await fs.writeFile(filePath, file.data);
 
-  const avatarUrl = `/uploads/avatars/${filename}`;
+  const cloud = env.cloudinary;
+  const cloudEnabled =
+    Boolean(cloud.cloudName) && Boolean(cloud.apiKey) && Boolean(cloud.apiSecret);
+
+  let avatarUrl: string;
+
+  if (cloudEnabled) {
+    // Upload to Cloudinary and store the public HTTPS URL in DB.
+    const uploaded = await uploadImageToCloudinary(
+      {
+        cloudName: cloud.cloudName,
+        apiKey: cloud.apiKey,
+        apiSecret: cloud.apiSecret,
+        folder: cloud.folder || 'avatars',
+      },
+      {
+        data: file.data,
+        // NOTE: multipart parser exposes `contentType`, not `mime`.
+        // Use computed `mime` to ensure Cloudinary receives a valid data URI media type.
+        mime,
+        // stable id makes it easier to overwrite previous avatar
+        publicId: `user_${userId}`,
+      }
+    );
+    avatarUrl = uploaded.url;
+  } else {
+    // Local fallback (development only / if Cloudinary is not configured)
+    const filePath = path.join(AVATAR_DIR, filename);
+    await fs.writeFile(filePath, file.data);
+    avatarUrl = `/uploads/avatars/${filename}`;
+  }
+
   const user = await prisma.user.update({
     where: { id: userId },
     data: { avatarUrl },
