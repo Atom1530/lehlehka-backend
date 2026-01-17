@@ -134,14 +134,10 @@ components:
             babySize: { type: number }
             babyWeight: { type: number }
             analogy: { type: string, nullable: true }
-<<<<<<< HEAD
             babyActivity: { type: string }
             babyDevelopment: { type: string }
             interestingFact: { type: string }
           required: [weekNumber, image, babySize, babyWeight, analogy, babyActivity, babyDevelopment, interestingFact]
-=======
-          required: [weekNumber, image, babySize, babyWeight, analogy]
->>>>>>> 7d8758e6e61cd764447a94aaec318c5f09da0418
         momTip:
           type: object
           properties:

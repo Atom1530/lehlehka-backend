@@ -28,7 +28,7 @@ function buildSignature(params: Record<string, string>, apiSecret: string): stri
 
 export async function uploadImageToCloudinary(
   cfg: CloudinaryConfig,
-  file: { data: Buffer; mime: string; publicId?: string }
+  file: { data: Buffer; mime: string; publicId?: string },
 ): Promise<CloudinaryUploadResult> {
   const timestamp = Math.floor(Date.now() / 1000);
   const folder = cfg.folder || 'avatars';
@@ -69,7 +69,6 @@ export async function uploadImageToCloudinary(
     body,
   });
 
-<<<<<<< HEAD
   type CloudinaryResponse = {
     secure_url?: string;
     url?: string;
@@ -82,44 +81,28 @@ export async function uploadImageToCloudinary(
   };
 
   const json = (await res.json()) as CloudinaryResponse;
-=======
-  const json = (await res.json()) as any;
->>>>>>> 7d8758e6e61cd764447a94aaec318c5f09da0418
   if (!res.ok) {
-    const msg = typeof json?.error?.message === 'string' ? json.error.message : 'Cloudinary upload failed';
+    const msg =
+      typeof json?.error?.message === 'string' ? json.error.message : 'Cloudinary upload failed';
     throw new Error(msg);
   }
 
-<<<<<<< HEAD
   const secureUrl = json.secure_url ?? json.url;
   if (!secureUrl || !json.public_id || typeof json.bytes !== 'number') {
     throw new Error('Cloudinary response missing required fields');
   }
-=======
-  const secureUrl: string = json.secure_url || json.url;
->>>>>>> 7d8758e6e61cd764447a94aaec318c5f09da0418
 
   // Best-effort "ping" to reduce the chance the caller immediately hits a stale/404 cached URL.
   // Never throw here: a transient CDN delay should not turn a successful upload into HTTP 500.
   // We add a cache-busting query param for the ping only.
   try {
-<<<<<<< HEAD
     const pingUrl = `${secureUrl}${secureUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
     for (let i = 0; i < 6; i++) {
-      const ok = await fetch(pingUrl, { method: 'HEAD' }).then((r) => r.ok).catch(() => false);
+      const ok = await fetch(pingUrl, { method: 'HEAD' })
+        .then((r) => r.ok)
+        .catch(() => false);
       if (ok) break;
       await new Promise((r) => setTimeout(r, 200 * (i + 1)));
-=======
-    const pingUrl = secureUrl ? `${secureUrl}${secureUrl.includes('?') ? '&' : '?'}t=${Date.now()}` : '';
-    if (pingUrl) {
-      for (let i = 0; i < 6; i++) {
-        // eslint-disable-next-line no-await-in-loop
-        const ok = await fetch(pingUrl, { method: 'HEAD' }).then((r) => r.ok).catch(() => false);
-        if (ok) break;
-        // eslint-disable-next-line no-await-in-loop
-        await new Promise((r) => setTimeout(r, 200 * (i + 1)));
-      }
->>>>>>> 7d8758e6e61cd764447a94aaec318c5f09da0418
     }
   } catch {
     // ignore
