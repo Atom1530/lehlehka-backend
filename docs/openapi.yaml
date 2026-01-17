@@ -134,10 +134,14 @@ components:
             babySize: { type: number }
             babyWeight: { type: number }
             analogy: { type: string, nullable: true }
+<<<<<<< HEAD
             babyActivity: { type: string }
             babyDevelopment: { type: string }
             interestingFact: { type: string }
           required: [weekNumber, image, babySize, babyWeight, analogy, babyActivity, babyDevelopment, interestingFact]
+=======
+          required: [weekNumber, image, babySize, babyWeight, analogy]
+>>>>>>> 7d8758e6e61cd764447a94aaec318c5f09da0418
         momTip:
           type: object
           properties:
@@ -788,6 +792,45 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/emotions:
+    get:
+      tags: [emotions]
+      summary: List emotions
+      description: Public reference list of emotions for diary entries.
+      responses:
+        '200':
+          description: Emotions list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EmotionRef'
+
+  /api/emotions/{id}:
+    get:
+      tags: [emotions]
+      summary: Get emotion by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Emotion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmotionRef'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/diaries:
     get:
       tags: [diaries]
@@ -903,10 +946,19 @@ paths:
         - bearerAuth: []
       parameters:
         - in: path
+<<<<<<< HEAD
           name: id
           required: true
           schema:
             type: string
+=======
+          name: weekNumber
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 40
+>>>>>>> 7d8758e6e61cd764447a94aaec318c5f09da0418
       responses:
         '200':
           description: Deleted

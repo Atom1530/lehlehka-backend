@@ -38,6 +38,7 @@ curl -i -X POST "$BASE/api/tasks" \
   -H "Content-Type: application/json" \
   -d '{"name":"Test task","date":"2026-01-06"}'
 
+<<<<<<< HEAD
 # optional: mark task done (status)
 # TASK_ID="<paste id from create task response>"
 # curl -i -X PATCH "$BASE/api/tasks/$TASK_ID/status" \
@@ -45,6 +46,8 @@ curl -i -X POST "$BASE/api/tasks" \
 #   -H "Content-Type: application/json" \
 #   -d '{"isDone":true}'
 
+=======
+>>>>>>> 7d8758e6e61cd764447a94aaec318c5f09da0418
 curl -i "$BASE/api/tasks?date=2026-01-06" \
   -H "Authorization: Bearer $ACCESS"
 

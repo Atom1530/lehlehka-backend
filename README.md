@@ -8,7 +8,11 @@ Backend API for the **Lehlehka** team project.
 - Seed from JSON data (emotions / mom states / baby states)
 - Auth (access + refresh, sessions stored in DB)
 - Users: get current user, update profile, upload avatar
+<<<<<<< HEAD
 - Tasks: create, list by date, update isDone (status)
+=======
+- Tasks: create, list by date, update isDone
+>>>>>>> 7d8758e6e61cd764447a94aaec318c5f09da0418
 - Diaries: create + list by date
 - Reference data: emotions + weeks dashboard
 - Weeks: public week dashboard + private endpoints (current / baby / mom)
@@ -110,6 +114,7 @@ curl -s -X POST http://localhost:4000/api/auth/logout \
   -d '{}'
 ```
 
+<<<<<<< HEAD
 Create a task:
 ```bash
 curl -s -X POST http://localhost:4000/api/tasks \
@@ -134,6 +139,8 @@ curl -i -X PATCH http://localhost:4000/api/users/avatar \
 ```
 Response is `text/plain` (a direct URL). If your client needs the updated user object, call `GET /api/users/current`.
 
+=======
+>>>>>>> 7d8758e6e61cd764447a94aaec318c5f09da0418
 ## Smoke tests
 See `docs/smoke.md`.
 
