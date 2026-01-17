@@ -1,6 +1,7 @@
 import { prisma } from '../../db/prisma.js';
 import { HttpError } from '../../middleware/errorHandler.js';
 import { parseDateYYYYMMDD } from '../../utils/time.js';
+import type { Prisma } from '@prisma/client';
 
 export type CreateDiaryInput = {
   title: string;
@@ -37,10 +38,14 @@ async function assertEmotionsExist(emotionIds: string[]) {
   }
 }
 
-function mapDiary(entry: any) {
+type DiaryEntryWithEmotions = Prisma.DiaryEntryGetPayload<{
+  include: { emotions: { include: { emotion: true } } };
+}>;
+
+function mapDiary(entry: DiaryEntryWithEmotions) {
   return {
     ...entry,
-    emotions: (entry.emotions ?? []).map((x: any) => ({
+    emotions: (entry.emotions ?? []).map((x) => ({
       id: x.emotion.id,
       title: x.emotion.title,
     })),
@@ -69,12 +74,21 @@ export async function createDiaryEntry(userId: string, input: CreateDiaryInput) 
   return mapDiary(entry);
 }
 
-export async function listDiaryEntries(userId: string, dateStr: string) {
-  const date = parseDateYYYYMMDD(dateStr);
+/**
+ * List diary entries for a user.
+ *
+ * If `dateStr` is provided (YYYY-MM-DD) — returns entries only for that date.
+ * If `dateStr` is omitted — returns all entries.
+ */
+export async function listDiaryEntries(userId: string, dateStr?: string) {
+  const where: { userId: string; date?: Date } = { userId };
+  if (typeof dateStr === 'string' && dateStr.length > 0) {
+    where.date = parseDateYYYYMMDD(dateStr);
+  }
 
   const entries = await prisma.diaryEntry.findMany({
-    where: { userId, date },
-    orderBy: [{ createdAt: 'desc' }],
+    where,
+    orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
     include: { emotions: { include: { emotion: true } } },
   });
 
@@ -87,12 +101,12 @@ export async function updateDiaryEntry(userId: string, entryId: string, input: U
     throw new HttpError(404, 'Diary entry not found', { code: 'NOT_FOUND' });
   }
 
-  const data: any = {};
+  const data: Prisma.DiaryEntryUpdateInput = {};
   if (typeof input.title === 'string') data.title = input.title;
   if (typeof input.description === 'string') data.description = input.description;
   if (typeof input.date === 'string') data.date = parseDateYYYYMMDD(input.date);
 
-  const tx: any[] = [];
+  const tx: Prisma.PrismaPromise<unknown>[] = [];
   if (Object.keys(data).length > 0) {
     tx.push(
       prisma.diaryEntry.update({
@@ -120,6 +134,10 @@ export async function updateDiaryEntry(userId: string, entryId: string, input: U
     where: { id: entryId },
     include: { emotions: { include: { emotion: true } } },
   });
+
+  if (!entry) {
+    throw new HttpError(404, 'Diary entry not found', { code: 'NOT_FOUND' });
+  }
 
   return mapDiary(entry);
 }

@@ -9,6 +9,7 @@ import { addMs, parseDateYYYYMMDD } from '../../utils/time.js';
 
 import type { LoginInput, RegisterInput } from './auth.schemas.js';
 import { type StringValue } from 'ms';
+import type { User } from '@prisma/client';
 
 type TokenPair = { accessToken: string; refreshToken: string };
 
@@ -23,7 +24,7 @@ type PublicUser = {
   updatedAt: string;
 };
 
-function toPublicUser(user: any): PublicUser {
+function toPublicUser(user: User): PublicUser {
   return {
     id: user.id,
     name: user.name,
@@ -80,6 +81,8 @@ export async function register(input: RegisterInput) {
       passwordHash,
       gender: input.gender ?? null,
       dueDate,
+      // Default avatar is applied on backend so frontend can rely on a stable URL
+      avatarUrl: env.defaultAvatarUrl || null,
     },
   });
 

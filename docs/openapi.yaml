@@ -4,7 +4,9 @@ info:
   version: 0.8.0
   description: Backend API for Lehlehka (Next + Node) team project.
 servers:
-  - url: http://localhost:4000
+  # Use relative server URL so Swagger works on any host (localhost, Render, etc.).
+  # In runtime, the server may also override this via SWAGGER_SERVER_URL.
+  - url: /
 
 tags:
   - name: system
@@ -81,82 +83,79 @@ components:
 
     WeekBabyState:
       type: object
+      description: Baby development state for a given week (private).
       properties:
-        id: { type: string }
         weekNumber: { type: integer, minimum: 1, maximum: 40 }
-        image: { type: string, nullable: true }
-        babySize: { type: string, nullable: true }
-        babyWeight: { type: string, nullable: true }
         analogy: { type: string, nullable: true }
-        description: { type: string, nullable: true }
-        babyActivities:
-          type: array
-          items: { type: string }
+        babySize: { type: number }
+        babyWeight: { type: number }
+        image: { type: string }
+        babyActivity: { type: string }
+        babyDevelopment: { type: string }
+        interestingFact: { type: string }
         momDailyTips:
           type: array
           items: { type: string }
-      required: [id, weekNumber, babyActivities, momDailyTips]
+      required: [weekNumber, babySize, babyWeight, image, babyActivity, babyDevelopment, interestingFact, momDailyTips]
+
+    WeekMomComfortTip:
+      type: object
+      properties:
+        category: { type: string }
+        tip: { type: string }
+      required: [category, tip]
 
     WeekMomState:
       type: object
+      description: Mom body/feelings state for a given week (private).
       properties:
-        id: { type: string }
         weekNumber: { type: integer, minimum: 1, maximum: 40 }
-        image: { type: string, nullable: true }
-        changes:
+        feelingsStates:
           type: array
           items: { type: string }
+        sensationDescr: { type: string }
         comfortTips:
           type: array
           items:
-            type: object
-            properties:
-              category: { type: string }
-              tips:
-                type: array
-                items: { type: string }
-            required: [category, tips]
-      required: [id, weekNumber, changes, comfortTips]
+            $ref: '#/components/schemas/WeekMomComfortTip'
+      required: [weekNumber, feelingsStates, sensationDescr, comfortTips]
 
     WeekDashboardInfo:
       type: object
+      description: Dashboard info for a given pregnancy week (public). May include daysToChildbirth when dueDate query is provided.
       properties:
         weekNumber: { type: integer, minimum: 1, maximum: 40 }
+        daysToChildbirth: { type: integer, minimum: 0, nullable: true }
         baby:
           type: object
           properties:
-            weekNumber: { type: integer }
-            image: { type: string, nullable: true }
-            babySize: { type: string, nullable: true }
-            babyWeight: { type: string, nullable: true }
+            weekNumber: { type: integer, minimum: 1, maximum: 40 }
+            image: { type: string }
+            babySize: { type: number }
+            babyWeight: { type: number }
             analogy: { type: string, nullable: true }
-          required: [weekNumber]
-        mom:
+            babyActivity: { type: string }
+            babyDevelopment: { type: string }
+            interestingFact: { type: string }
+          required: [weekNumber, image, babySize, babyWeight, analogy, babyActivity, babyDevelopment, interestingFact]
+        momTip:
           type: object
           properties:
-            weekNumber: { type: integer }
-            image: { type: string, nullable: true }
-            tip:
+            dailyTip: { type: string, nullable: true }
+            comfortTip:
+              allOf:
+                - $ref: '#/components/schemas/WeekMomComfortTip'
               nullable: true
-              type: object
-              properties:
-                category: { type: string }
-                tip: { type: string }
-              required: [category, tip]
-          required: [weekNumber]
-        momDailyTip:
-          type: string
-          nullable: true
-      required: [weekNumber, baby, mom, momDailyTip]
+          required: [dailyTip, comfortTip]
+      required: [weekNumber, baby, momTip]
 
-    CurrentWeekResponse:
-      type: object
-      properties:
-        weekNumber: { type: integer, minimum: 1, maximum: 40 }
-        daysToChildbirth: { type: integer, minimum: 0 }
-        dashboard:
-          $ref: '#/components/schemas/WeekDashboardInfo'
-      required: [weekNumber, daysToChildbirth, dashboard]
+    CurrentWeekInfo:
+      allOf:
+        - $ref: '#/components/schemas/WeekDashboardInfo'
+        - type: object
+          properties:
+            daysToChildbirth: { type: integer, minimum: 0 }
+          required: [daysToChildbirth]
 
     RegisterRequest:
       type: object
@@ -378,11 +377,13 @@ components:
         date:
           type: string
           format: date
+          nullable: true
+          description: Applied filter date (YYYY-MM-DD). Null when no filter is used.
         entries:
           type: array
           items:
             $ref: '#/components/schemas/DiaryEntry'
-      required: [date, entries]
+      required: [entries]
 
 paths:
   /health:
@@ -624,9 +625,11 @@ paths:
         '200':
           description: OK
           content:
-            application/json:
+            text/plain:
               schema:
-                $ref: '#/components/schemas/PublicUser'
+                type: string
+                format: uri
+              example: https://res.cloudinary.com/demo/image/upload/v123/user_123.jpg
         '400':
           description: Validation error
           content:
@@ -702,7 +705,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/tasks/{id}:
+  /api/tasks/{id}/status:
     patch:
       tags: [tasks]
       summary: Change task status
@@ -735,6 +738,12 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
           content:
             application/json:
               schema:
@@ -782,16 +791,17 @@ paths:
   /api/diaries:
     get:
       tags: [diaries]
-      summary: Get diary entries for a date (defaults to today)
+      summary: Get diary entries
       security:
         - bearerAuth: []
       parameters:
         - in: query
           name: date
+          required: false
           schema:
             type: string
             format: date
-          description: YYYY-MM-DD
+          description: Optional filter (YYYY-MM-DD). If omitted, returns all diary entries.
       responses:
         '200':
           description: Diary entries list
@@ -886,7 +896,39 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-
+    delete:
+      tags: [diaries]
+      summary: Delete diary entry
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                required: [id]
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/weeks/{weekNumber}:
     get:
       tags: [weeks]
@@ -899,6 +941,13 @@ paths:
             type: integer
             minimum: 1
             maximum: 40
+        - in: query
+          name: dueDate
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Optional. If provided, response includes daysToChildbirth.
       responses:
         '200':
           description: OK
@@ -906,6 +955,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WeekDashboardInfo'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Not found
           content:
@@ -925,7 +980,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WeekCurrentInfo'
+                $ref: '#/components/schemas/CurrentWeekInfo'
         '401':
           description: Unauthorized
           content:

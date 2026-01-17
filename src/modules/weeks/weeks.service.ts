@@ -50,11 +50,43 @@ export async function getWeekDashboardInfo(weekNumber: number) {
       babySize: baby.babySize,
       babyWeight: baby.babyWeight,
       image: baby.image,
+      babyActivity: baby.babyActivity,
+      babyDevelopment: baby.babyDevelopment,
+      interestingFact: baby.interestingFact,
     },
     momTip: {
       dailyTip: momDailyTip,
       comfortTip,
     },
+  };
+}
+
+function parseDueDateIso(dueDateIso: string): Date {
+  // Expect YYYY-MM-DD
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDateIso)) {
+    throw new HttpError(400, 'Invalid dueDate', { code: 'VALIDATION_ERROR' });
+  }
+  const [y, m, d] = dueDateIso.split('-').map((v) => Number(v));
+  const date = new Date(Date.UTC(y!, (m! - 1)!, d!));
+  // Guard invalid dates like 2025-13-40
+  if (Number.isNaN(date.getTime())) {
+    throw new HttpError(400, 'Invalid dueDate', { code: 'VALIDATION_ERROR' });
+  }
+  return date;
+}
+
+// Public helper: optionally enrich dashboard info with daysToChildbirth when dueDate is provided.
+export async function getWeekDashboardInfoPublic(weekNumber: number, dueDateIso?: string) {
+  const dashboard = await getWeekDashboardInfo(weekNumber);
+  if (!dueDateIso) return dashboard;
+
+  const dueDate = parseDueDateIso(dueDateIso);
+  const today = utcToday();
+  const daysToChildbirth = Math.max(0, diffDaysUtc(today, dueDate));
+
+  return {
+    ...dashboard,
+    daysToChildbirth,
   };
 }
 
@@ -78,8 +110,7 @@ export async function getCurrentWeekInfo(userId: string) {
   const dashboard = await getWeekDashboardInfo(currentWeek);
 
   return {
-    weekNumber: currentWeek,
-    daysToChildbirth,
     ...dashboard,
+    daysToChildbirth,
   };
 }
