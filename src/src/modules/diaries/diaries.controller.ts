@@ -3,26 +3,31 @@ import type { AuthenticatedRequest } from '../../middleware/auth.js';
 
 import { HttpError } from '../../middleware/errorHandler.js';
 import { parseDateYYYYMMDD } from '../../utils/time.js';
-import { createTask, listTasks, updateTaskStatus } from './tasks.service.js';
+import {
+  createDiaryEntry,
+  deleteDiaryEntry,
+  listDiaryEntries,
+  updateDiaryEntry,
+} from './diaries.service.js';
 
-export const tasksController = {
+export const diariesController = {
   async create(req: AuthenticatedRequest, res: Response) {
-    const task = await createTask(req.userId, req.body);
-    res.status(201).json(task);
+    const entry = await createDiaryEntry(req.userId, req.body);
+    res.status(201).json(entry);
   },
 
   async list(req: AuthenticatedRequest, res: Response) {
     const dateStrRaw = req.query.date as string | undefined;
 
+    // If date is provided, validate and apply filter. If omitted, return all entries.
     if (dateStrRaw !== undefined) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStrRaw)) {
+      if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(dateStrRaw)) {
         throw new HttpError(400, 'Validation error', {
           code: 'VALIDATION_ERROR',
           details: { date: ['date must be YYYY-MM-DD'] },
         });
       }
 
-      // Validate parseable date (throws on invalid)
       try {
         parseDateYYYYMMDD(dateStrRaw);
       } catch {
@@ -33,17 +38,27 @@ export const tasksController = {
       }
     }
 
-    const tasks = await listTasks(req.userId, dateStrRaw);
-    res.json({ date: dateStrRaw ?? null, tasks });
+    const entries = await listDiaryEntries(req.userId, dateStrRaw);
+    res.json({ date: dateStrRaw ?? null, entries });
   },
 
-  async patchStatus(req: AuthenticatedRequest, res: Response) {
+  async patch(req: AuthenticatedRequest, res: Response) {
     const { id } = req.params as { id: string };
     if (!id) {
       throw new HttpError(400, 'Validation error', { code: 'VALIDATION_ERROR' });
     }
 
-    const task = await updateTaskStatus(req.userId, id, req.body.isDone);
-    res.json(task);
+    const entry = await updateDiaryEntry(req.userId, id, req.body);
+    res.json(entry);
+  },
+
+  async remove(req: AuthenticatedRequest, res: Response) {
+    const { id } = req.params as { id: string };
+    if (!id) {
+      throw new HttpError(400, 'Validation error', { code: 'VALIDATION_ERROR' });
+    }
+
+    const result = await deleteDiaryEntry(req.userId, id);
+    res.json(result);
   },
 };
